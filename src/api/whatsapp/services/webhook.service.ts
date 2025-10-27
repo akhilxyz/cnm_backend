@@ -7,7 +7,7 @@ export class WebhookService {
   private accountRepo = new WhatsAppAccountRepository();
 
   async verifyWebhookToken(token: string) {
-    return token === process.env.WEBHOOK_VERIFY_TOKEN || 'WH_VERIFY_2025_aSdF7gHjKl9pQ2wE4rTyU6iO8pAsDfGhJkL';
+    return token = 'WH_VERIFY_2025_aSdF7gHjKl9pQ2wE4rTyU6iO8pAsDfGhJkL';
   }
 
   async logWebhook(payload: any, eventType = "incoming", status = "success", errorMessage?: string) {

@@ -298,7 +298,7 @@ export class WhatsAppAccountController {
       if (req.method === "GET") {
         const { 'hub.mode': mode, 'hub.challenge': challenge, 'hub.verify_token': token } = req.query;
         // Replace with the token you configured in Meta dashboard
-        const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN || "WH_VERIFY_2025_aSdF7gHjKl9pQ2wE4rTyU6iO8pAsDfGhJkL";
+        const verifyToken = "WH_VERIFY_2025_aSdF7gHjKl9pQ2wE4rTyU6iO8pAsDfGhJkL";
 
         if (mode === 'subscribe' && token === verifyToken) {
           console.log('WEBHOOK VERIFIED');

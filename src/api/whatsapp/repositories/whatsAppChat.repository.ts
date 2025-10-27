@@ -12,7 +12,7 @@ export class WhatsAppChatRepository {
     contactId: number;
     messageId: string;
     direction: 'inbound' | 'outbound';
-    messageType: string ;
+    messageType: string;
     content?: string | null;
     mediaUrl?: string | null;
     mediaId?: string | null;
@@ -104,12 +104,16 @@ export class WhatsAppChatRepository {
           'status'
         ], [
           literal(`(
-        SELECT w2.content
-        FROM \`whatsapp_chats\` AS w2
-        WHERE w2.contactId = WhatsAppChat.contactId
-        ORDER BY w2.timestamp DESC
-        LIMIT 1
-      )`),
+            SELECT 
+              CASE 
+                WHEN w2.content IS NULL OR w2.content = '' THEN w2.messageType
+                ELSE w2.content
+              END
+            FROM \`whatsapp_chats\` AS w2
+            WHERE w2.contactId = WhatsAppChat.contactId
+            ORDER BY w2.timestamp DESC
+            LIMIT 1
+          )`),
           'lastMessage'
         ]
       ],
