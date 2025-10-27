@@ -197,8 +197,7 @@ export class UserService {
           };
           finalUser = await this.userRepository.createAsync(userObj);
         }
-
-        authToken = createJwtToken({ id: finalUser.id });
+        authToken = createJwtToken({ id: finalUser.id, ROLE: finalUser?.role ?? "USER" });
 
       } else {
         return ServiceResponse.failure('Invalid login method', null, StatusCodes.BAD_REQUEST);
@@ -355,14 +354,14 @@ export class UserService {
     }
   }
 
-   async betaRequest( updateData: {email : string}): Promise<ServiceResponse<User | null>> {
+  async betaRequest(updateData: { email: string }): Promise<ServiceResponse<User | null>> {
     try {
 
-      const isBetaRequestExist  :any =  await this.userRepository.checkBetaRequestExist(updateData.email)
+      const isBetaRequestExist: any = await this.userRepository.checkBetaRequestExist(updateData.email)
       if (isBetaRequestExist) {
-          return ServiceResponse.success('Beta request already received.', null);
-      } 
-       await this.userRepository.createBetaRequest(updateData.email)
+        return ServiceResponse.success('Beta request already received.', null);
+      }
+      await this.userRepository.createBetaRequest(updateData.email)
       return ServiceResponse.success<null>('Beta request sent successfully', null);
     } catch (error) {
       logger.error('Error sending Beta request', error);
