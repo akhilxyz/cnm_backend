@@ -107,8 +107,8 @@ export async function verifyGoogleToken(token: string) {
 }
 
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_default_secret'; // Use env variable in production!
-const JWT_EXPIRES_IN :any =  process.env.JWT_EXPIRES_IN || '7d'; // You can change it (e.g., '1h', '30m', etc.)
+export const JWT_SECRET = process.env.JWT_SECRET || 'your_default_secret'; // Use env variable in production!
+export const JWT_EXPIRES_IN :any =  process.env.JWT_EXPIRES_IN || '7d'; // You can change it (e.g., '1h', '30m', etc.)
 
 
 

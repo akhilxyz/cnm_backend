@@ -18,5 +18,5 @@ export const env = cleanEnv(process.env, {
   DB_NAME: str({ devDefault: testOnly("your_database") }),
   DB_USER: str({ devDefault: testOnly("your_user") }),
   DB_PASS: str({ devDefault: testOnly("your_password") }),
-  DB_HOST: host({ devDefault: testOnly("localhost") }),
+  DB_HOST: str({ devDefault: testOnly("localhost") }),
 });

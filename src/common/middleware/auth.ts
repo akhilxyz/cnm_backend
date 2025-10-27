@@ -5,6 +5,7 @@ import { UserJwtPayload } from '@/common/types/express';
 import { ServiceResponse } from '../models/serviceResponse';
 import { StatusCodes } from 'http-status-codes';
 import { handleServiceResponse } from '../utils/httpHandlers';
+import { JWT_SECRET } from '../utils/commonValidation';
 
 export function authenticateToken(req: Request, res: Response, next: NextFunction) {
     const authHeader: any = req.headers['api-access-token'];
@@ -22,12 +23,15 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
     try {
         const user = jwt.verify(
             token,
-            process.env.JWT_SECRET as string
+            JWT_SECRET as string
         ) as UserJwtPayload;
 
         req.user = user;
         next();
-    } catch (err) {
+    } catch (err :any) {
+        console.log("ERR", err?.message ?? err)
+        console.log("ERR", err)
+
         return jwtErrorHandler(err, res)
     }
 }
@@ -45,7 +49,7 @@ export function publicAuthenticateToken(req: Request, res: Response, next: NextF
     try {
         const user = jwt.verify(
             token,
-            process.env.JWT_SECRET as string
+            JWT_SECRET as string
         ) as UserJwtPayload;
 
         req.user = user;
@@ -71,7 +75,7 @@ export function authenticateSeller(req: Request, res: Response, next: NextFuncti
     try {
         const user = jwt.verify(
             token,
-            process.env.JWT_SECRET as string
+            JWT_SECRET as string
         ) as UserJwtPayload;
         if (!user.role || user.role?.toLowerCase() !== 'seller') {
             const serviceResponse = ServiceResponse.failure(
@@ -104,7 +108,7 @@ export function authenticateAdminToken(req: Request, res: Response, next: NextFu
     try {
         const user = jwt.verify(
             token,
-            process.env.JWT_SECRET as string
+            JWT_SECRET as string
         ) as UserJwtPayload;
         if (!user.role || user.role !== 'ADMIN') {
             const serviceResponse = ServiceResponse.failure(
