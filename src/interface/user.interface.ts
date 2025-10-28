@@ -26,6 +26,8 @@ export interface RegisterRequest {
 }
 
 
+
+
 export interface CreateUserInput
     extends Omit<User, 'id'> { } // reuse User but omit `id` for create
 
@@ -99,3 +101,21 @@ export interface OTP {
 }
 
 export interface CreateOTPInput extends Omit<OTP, 'id' | 'createdAt' | 'updatedAt'> { }
+
+
+export interface CreateUserByAdminRequest {
+    fullName: string;
+    loginWith: 'phone' | 'email' | 'gmail';
+    phoneNumber?: string;
+    email?: string;
+    password?: string;
+    status?: 'active' | 'inactive' | 'suspended';
+}
+
+export interface UpdateUserRequest {
+    fullName?: string;
+    phoneNumber?: string;
+    email?: string;
+    password?: string;
+    status?: 'active' | 'inactive' | 'suspended';
+}

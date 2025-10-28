@@ -19,7 +19,7 @@ export class WhatsAppChatService {
   /**
    * Handle incoming webhook messages
    */
-  async handleWebhook(payload: any): Promise<ServiceResponse<any>> {
+  /* async handleWebhook(payload: any): Promise<ServiceResponse<any>> {
     try {
       // The webhook payload contains an array of entries
 
@@ -131,7 +131,159 @@ export class WhatsAppChatService {
         StatusCodes.INTERNAL_SERVER_ERROR
       );
     }
+  } */
+
+
+    async handleWebhook(payload: any): Promise<ServiceResponse<any>> {
+  try {
+    const entries = payload?.entry ?? [];
+    if (!Array.isArray(entries) || entries.length === 0) {
+      logger.warn("[Webhook] Empty or invalid entries received");
+      return ServiceResponse.success("No entries to process", null, StatusCodes.OK);
+    }
+
+    for (const entry of entries) {
+      const changes = entry?.changes ?? [];
+      if (!Array.isArray(changes)) continue;
+
+      for (const change of changes) {
+        if (change?.field !== "messages") continue;
+
+        const value = change?.value;
+        const whatsappAccountPhoneId = value?.metadata?.phone_number_id;
+        if (!whatsappAccountPhoneId) {
+          logger.warn("[Webhook] Missing phone_number_id in metadata");
+          continue;
+        }
+
+        const account = await accountRepository.findByPhoneNumberIdAsync(whatsappAccountPhoneId);
+        if (!account) {
+          logger.warn(`Invalid WhatsApp account for phone_number_id: ${whatsappAccountPhoneId}`);
+          continue;
+        }
+
+        const whatsappAccountId = account.id;
+        const contacts = value?.contacts ?? [];
+        const messages = value?.messages ?? [];
+
+        for (const message of messages) {
+          if (!message?.from || !message?.id) continue;
+
+          const contactInfo = contacts.find((c: any) => c?.wa_id === message.from);
+          const phoneNumber = message.from;
+
+          // Find or create contact
+          let contact = await contactRepository.findByPhoneNumberAsync(whatsappAccountId, phoneNumber);
+          if (!contact) {
+            logger.info(`[Webhook] New lead detected for phone: ${phoneNumber}`);
+
+            const newContactPayload = {
+              whatsappAccountId,
+              name: contactInfo?.profile?.name || "Unknown User",
+              PhoneNumber: phoneNumber,
+              countryCode: "+91",
+              status: "ACTIVE",
+            };
+            contact = await contactRepository.createAsync(newContactPayload);
+
+            await new NewLeadRepository().createAsync({
+              whatsappAccountId,
+              phoneNumber,
+              wa_id: contactInfo?.wa_id ?? null,
+              name: contactInfo?.profile?.name || "Unknown User",
+              messageType: message?.type ?? "unknown",
+              message: message?.text?.body ?? null,
+              mediaUrl:
+                message?.image?.url ||
+                message?.video?.url ||
+                message?.audio?.url ||
+                message?.sticker?.url ||
+                null,
+            });
+
+            logger.info(`[Webhook] Saved new lead: ${phoneNumber}`);
+          }
+
+          // Skip duplicate messages
+          const messageId = message.id;
+          const existing = await chatRepository.findByMessageIdAsync(messageId);
+          if (existing) continue;
+
+          // Prepare message content safely
+          const content = message?.type === "text" ? message?.text?.body ?? null : null;
+          const mediaUrl =
+            message?.image?.url ||
+            message?.video?.url ||
+            message?.audio?.url ||
+            message?.sticker?.url ||
+            null;
+          const mediaId =
+            message?.image?.id ||
+            message?.video?.id ||
+            message?.audio?.id ||
+            message?.sticker?.id ||
+            null;
+          const mimeType =
+            message?.image?.mime_type ||
+            message?.video?.mime_type ||
+            message?.audio?.mime_type ||
+            message?.sticker?.mime_type ||
+            null;
+          const caption = message?.image?.caption || message?.video?.caption || null;
+
+          const chat = await chatRepository.createAsync({
+            whatsappAccountId,
+            contactId: contact.id,
+            messageId,
+            direction: "inbound",
+            messageType: message?.type ?? "unknown",
+            content,
+            mediaUrl,
+            mediaId,
+            mimeType,
+            caption,
+            fileName: message?.document?.filename ?? null,
+            fileSize: message?.document?.file_size ?? null,
+            status: "received",
+            metadata: value?.metadata ?? {},
+            timestamp: message?.timestamp
+              ? new Date(parseInt(message.timestamp) * 1000)
+              : new Date(),
+          });
+
+          // Create notification
+          const title = `📩 New WhatsApp message from ${contact?.name ?? "User"}`;
+          const notify = await new NotificationRepository().createAsync({
+            whatsappAccountId,
+            contactId: contact.id,
+            title,
+            message: content ?? `${message?.type ?? "unknown"} received`,
+          });
+
+          if (notify?.id) {
+            logger.info("[notificationEmitter] notification received");
+            const receiverAccount = await accountRepository.findByIdAsync(whatsappAccountId);
+            notificationEmitter.emit("send_notification", {
+              userId: receiverAccount?.id ?? null,
+              data: chat,
+            });
+          }
+
+          logger.info(`[Webhook] Processed message ID: ${messageId}`);
+        }
+      }
+    }
+
+    return ServiceResponse.success("Webhook processed successfully", null, StatusCodes.OK);
+  } catch (ex) {
+    logger.error(`[Webhook] Error: ${(ex as Error).message}`);
+    return ServiceResponse.failure(
+      "Failed to process webhook message",
+      null,
+      StatusCodes.INTERNAL_SERVER_ERROR
+    );
   }
+}
 
 
   /**

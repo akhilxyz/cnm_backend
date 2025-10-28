@@ -16,7 +16,7 @@ export class NotificationRepository {
   async findRecentAsync(whatsappAccountId: number, limit = 5) {
     return await Model.Notification.findAll({
       where: { whatsappAccountId },
-      order: [['created_at', 'DESC']],
+      order: [['createdAt', 'DESC']],
       limit,
     });
   }

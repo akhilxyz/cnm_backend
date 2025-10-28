@@ -2,6 +2,10 @@ import { ServiceResponse } from "@/common/models/serviceResponse";
 import { StatusCodes } from "http-status-codes";
 import { NotificationRepository } from "./notification.repository";
 import { logger } from "@/server";
+import { WhatsAppAccountRepository } from "../whatsapp/repositories/whatsAppAccount.repository";
+
+
+const accountRepository = new WhatsAppAccountRepository();
 
 
 export class NotificationService {
@@ -14,9 +18,11 @@ export class NotificationService {
   /**
    * Fetch recent notifications for a WhatsApp account
    */
-  async findRecent(whatsappAccountId: number, limit: number = 5): Promise<ServiceResponse<any>> {
+  async findRecent(userID: number, limit: number = 10): Promise<ServiceResponse<any>> {
     try {
-      const notifications = await this.notificationRepository.findRecentAsync(whatsappAccountId, limit);
+      const WAAccount= await accountRepository.findByUserIdAsync(userID)
+
+      const notifications = await this.notificationRepository.findRecentAsync(WAAccount.id, limit);
 
       if (!notifications || notifications.length === 0) {
         return ServiceResponse.failure('No notifications found', null, StatusCodes.NOT_FOUND);

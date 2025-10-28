@@ -25,10 +25,10 @@ class NotificationController {
    * Fetch recent notifications
    */
   public findRecent: RequestHandler = async (req: Request, res: Response) => {
-    const whatsappAccountId = Number(req.query.whatsappAccountId);
+    const { id }: any = req.user;
     const limit = Number(req.query.limit) || 5;
 
-    const serviceResponse = await notificationService.findRecent(whatsappAccountId, limit);
+    const serviceResponse = await notificationService.findRecent(Number(id), limit);
 
     return handleServiceResponse(serviceResponse, res);
   };

@@ -32,42 +32,32 @@ export class UserRepository {
     };
   }
 
-  async sellerFindByIdAsync(id: number): Promise<any | null> {
-  const user :any = await Model.User.findByPk(id);
-  const follower = await Model.UserFollow.count({where : {following_id : user.id}});
+   /**
+   * Check if user exists (excluding a specific user ID)
+   */
+  async checkIfUserExistsExcludingId(
+    data: { email?: string; phoneNumber?: string },
+    excludeUserId: number
+  ): Promise<boolean> {
+    const whereClause: any = {
+      id: { [Op.ne]: excludeUserId }
+    };
 
-  if (!user) return null;
+    const orConditions: any[] = [];
+    if (data.email) {
+      orConditions.push({ email: data.email });
+    }
+    if (data.phoneNumber) {
+      orConditions.push({ phoneNumber: data.phoneNumber });
+    }
 
-  const plainUser = user.get({ plain: true }) as User;
+    if (orConditions.length > 0) {
+      whereClause[Op.or] = orConditions;
+    }
 
-  // Get all active projects for this seller
-  const projects: any[] = await Model.Project.findAll({
-    where: { sellerId: id, isActive: true },
-    attributes: ['id', 'title', 'description', 'rating', 'isFree', 'price'],
-    raw: true,
-  });
-
-  // Extract all ratings safely
-  const allRatings: number[] = projects.map((r: any) =>  r?.rating ?? 0);
-
-  const averageRating :any  =
-    allRatings.length > 0
-      ? Number((allRatings.reduce((sum, r) => Number(sum) + Number(r), 0) / allRatings.length).toFixed(2))
-      : 0;
-
-  console.log("averageRating", averageRating)
-  const totalProjects = projects.length;
-
-  const plainSeller = {
-    ...plainUser,
-    rating : averageRating,
-    totalProjects,
-    totalFollower : follower ?? 0
-  };
-  return plainSeller
-}
-
-
+    const user = await Model.User.findOne({ where: whereClause });
+    return !!user;
+  }
 
 
   async findByIdAsync(id: number): Promise<User | null> {
@@ -160,12 +150,39 @@ export class UserRepository {
     return await Model.OTP.create(payload);
   }
 
-  async createBetaRequest (email :string): Promise<any> {
-    return await Model.BetaRequest.create({email})
+   /**
+   * Update user by ID
+   */
+  async updateAsync(userId: number, data: any): Promise<User | null> {
+    await Model.User.update(data, {
+      where: { id: userId }
+    });
+
+    const updatedUser = await Model.User.findByPk(userId, {
+      attributes: { exclude: ['password'] }
+    });
+
+    return updatedUser as User | null;
   }
-  
- async checkBetaRequestExist(email: string) {
-  return Model.BetaRequest.findOne({ where: { email } });
-} 
+
+  /**
+   * Delete user by ID
+   * Returns true if deletion was successful
+   */
+  async deleteAsync(userId: number): Promise<boolean> {
+    // Option 1: Hard delete
+    const deleted = await Model.User.destroy({
+      where: { id: userId }
+    });
+
+    // Option 2: Soft delete (recommended - uncomment to use)
+    // await Model.User.update(
+    //   { deletedAt: new Date(), status: 'deleted' },
+    //   { where: { id: userId } }
+    // );
+    // return true;
+
+    return deleted > 0;
+  }
 
 }

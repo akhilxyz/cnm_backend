@@ -28,7 +28,7 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
 
         req.user = user;
         next();
-    } catch (err :any) {
+    } catch (err: any) {
         console.log("ERR", err?.message ?? err)
         console.log("ERR", err)
 
@@ -110,6 +110,8 @@ export function authenticateAdminToken(req: Request, res: Response, next: NextFu
             token,
             JWT_SECRET as string
         ) as UserJwtPayload;
+
+        console.log("user", user)
         if (!user.role || user.role !== 'ADMIN') {
             const serviceResponse = ServiceResponse.failure(
                 "unauthorized user",
@@ -125,7 +127,7 @@ export function authenticateAdminToken(req: Request, res: Response, next: NextFu
     }
 }
 
-function jwtErrorHandler(err: any, res : Response) {
+function jwtErrorHandler(err: any, res: Response) {
     if (err instanceof TokenExpiredError) {
         const serviceResponse = ServiceResponse.failure(
             "token expired",

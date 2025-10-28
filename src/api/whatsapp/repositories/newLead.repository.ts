@@ -4,6 +4,8 @@ import Model from "@/db/models";
 import { Op } from "sequelize";
 
 export class NewLeadRepository {
+
+  
   async createAsync(data: any) {
     return await Model.NewLead.create(data);
   }

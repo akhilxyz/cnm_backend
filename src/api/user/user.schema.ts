@@ -22,7 +22,7 @@ export const CreateUserSchema = {
   body: Joi.object({
     fullName: Joi.string().required(),
     aboutMe: Joi.string().optional(),
-    phoneNumber: Joi.string().required(),
+    phoneNumber: Joi.string().optional(),
     isPhoneVerified: Joi.boolean().default(false),
     email: Joi.string().email().required(),
     isEmailVerified: Joi.boolean().default(false),
