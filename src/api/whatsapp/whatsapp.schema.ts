@@ -69,19 +69,25 @@ export const sendMessageSchema = {
       "number.base": "Contact ID must be a number.",
       "any.required": "Contact ID is required.",
     }),
+
     messageType: Joi.string()
       .valid("text", "image", "video", "audio", "document", "template")
       .default("text"),
-    content: Joi.any().allow(null, "").messages({
-      "string.empty": "Message content cannot be empty.",
+
+    content: Joi.when("messageType", {
+      is: "text",
+      then: Joi.string().required().messages({
+        "string.empty": "Message content cannot be empty.",
+        "any.required": "Message content is required for text messages.",
+      }),
+      otherwise: Joi.any().allow(null, ""),
     }),
-    mediaUrl: Joi.string().uri().allow(null, ""),
     mediaId: Joi.string().allow(null, ""),
     mimeType: Joi.string().allow(null, ""),
     caption: Joi.string().allow(null, ""),
     fileName: Joi.string().allow(null, ""),
     fileSize: Joi.number().allow(null, ""),
-  }),
+  })
 };
 
 

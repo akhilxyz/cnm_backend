@@ -83,7 +83,7 @@ export class WhatsAppAccountService {
       }
 
       // ✅ Dynamically support both template + text
-      const resp = await whatsapp.sendTextMessage({
+      /* const resp = await whatsapp.sendTextMessage({
         to: contactInfo.phoneNumber,
         type: payload.messageType || 'text',
         text: payload.content || 'Hello! This is a test message.',
@@ -92,7 +92,20 @@ export class WhatsAppAccountService {
         languageCode: payload.languageCode,
         components: payload.components
       });
+ */
 
+      const resp = await whatsapp.sendMessage({
+  to: contactInfo.phoneNumber,
+  type: payload.messageType || 'text',
+  text: payload.content,
+  // mediaUrl: payload.mediaUrl,
+  mediaId: payload.mediaId,
+  caption: payload.caption,
+  fileName: payload.fileName,
+  templateName: payload.templateName,
+  languageCode: payload.languageCode,
+  components: payload.components,
+});
       await this.repository.createAsync({
         whatsappAccountId: findUser.id,
         contactId: payload?.contactId,

@@ -81,6 +81,79 @@ export class WhatsAppService {
     });
   }
 
+
+  async sendMessage(params: any): Promise<any> {
+  try {
+    const { type, to, ...rest } = params;
+
+    console.log("📤 Sending message:", { type, to, ...rest });
+
+    let payload: any = {
+      messaging_product: 'whatsapp',
+      to,
+    };
+
+    if (type === 'template') {
+      // ✅ Template message
+      payload.type = 'template';
+      payload.template = {
+        name: rest.templateName || 'hello_world',
+        language: { code: rest.languageCode || 'en_US' },
+        ...(rest.components && { components: rest.components }),
+      };
+
+    } else if (type === 'text') {
+      // ✅ Text message
+      payload.type = 'text';
+      payload.text = {
+        body: rest.text || 'Hello! This is a test message.',
+        ...(rest.previewUrl ? { preview_url: true } : {}),
+      };
+
+    } else if (["image", "video", "audio", "document"].includes(type)) {
+      // ✅ Media message
+      payload.type = type;
+
+      payload[type] = {
+        ...(rest.mediaId
+          ? { id: rest.mediaId } // use uploaded media ID if available
+          : { link: rest.mediaUrl }), // or use direct URL
+        ...(rest.caption ? { caption: rest.caption } : {}),
+        ...(rest.fileName && type === "document" ? { filename: rest.fileName } : {}),
+      };
+    }
+
+    console.log("📦 WhatsApp Payload:", JSON.stringify(payload, null, 2));
+
+    const response = await this.client.post('/messages', payload);
+    return response.data;
+
+  } catch (error: any) {
+    console.error('❌ WhatsApp API Error:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+
+    const apiError = error.response?.data?.error;
+    if (apiError) {
+      if (apiError.code === 131047) {
+        throw new Error('❌ 24-hour session expired. Use template to reinitiate.');
+      }
+      if (apiError.code === 131026) {
+        throw new Error('❌ Invalid phone number format. Use country code without "+".');
+      }
+      if (apiError.code === 100) {
+        throw new Error(`❌ Invalid parameter: ${apiError.message}`);
+      }
+      throw new Error(`❌ WhatsApp API Error (${apiError.code}): ${apiError.message}`);
+    }
+
+    throw error;
+  }
+}
+
   // Send text message
   // NOTE: This only works within 24 hours after user messages you first
   async sendTextMessage(params: any): Promise<any> {
