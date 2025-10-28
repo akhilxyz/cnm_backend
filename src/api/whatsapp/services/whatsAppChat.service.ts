@@ -180,10 +180,13 @@ export class WhatsAppChatService {
             const newContactPayload = {
               whatsappAccountId,
               name: contactInfo?.profile?.name || "Unknown User",
-              PhoneNumber: phoneNumber,
+              phoneNumber: (phoneNumber)?.toString(),
               countryCode: "+91",
               status: "ACTIVE",
             };
+
+            console.log("newContactPayload", newContactPayload)
+            
             contact = await contactRepository.createAsync(newContactPayload);
 
             await new NewLeadRepository().createAsync({
