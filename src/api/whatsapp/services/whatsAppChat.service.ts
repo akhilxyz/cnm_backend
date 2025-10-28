@@ -405,7 +405,6 @@ export class WhatsAppChatService {
         null,
         StatusCodes.FORBIDDEN
       );
-      console.log("account", account)
     const count = await chatRepository.getUnreadCountAllAsync(account.id);
     return ServiceResponse.success("Unread count fetched", { count }, StatusCodes.OK);
   }

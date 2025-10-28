@@ -22,6 +22,10 @@ export class NotificationService {
     try {
       const WAAccount= await accountRepository.findByUserIdAsync(userID)
 
+      if(!WAAccount) {
+        return ServiceResponse.success('Notifications fetched successfully', []);
+      }
+
       const notifications = await this.notificationRepository.findRecentAsync(WAAccount.id, limit);
 
       if (!notifications || notifications.length === 0) {

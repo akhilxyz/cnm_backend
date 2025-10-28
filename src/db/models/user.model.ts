@@ -64,6 +64,10 @@ User.init(
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
+    status: {
+      type: DataTypes.ENUM('ACTIVE', 'INACTIVE', 'SUSPENDED'),
+      defaultValue: 'ACTIVE',
+    },
     loginWith: {
       type: DataTypes.ENUM('email', 'phone', 'gmail'),
       allowNull: false,

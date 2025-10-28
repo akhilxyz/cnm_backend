@@ -207,6 +207,14 @@ import { sendResetPasswordEmail } from "@/services/mail.service";
 
       // Remove sensitive fields
       const { password, otp, otpHash, ...safeUser } = finalUser?.get?.({ plain: true }) ?? finalUser;
+      
+      if(safeUser.status !== 'ACTIVE') {
+        return ServiceResponse.failure(
+          `Your account is currently ${safeUser.status.toLowerCase()}. Please contact the administrator for assistance.`,
+          { status: safeUser.status },
+          StatusCodes.BAD_REQUEST
+        );
+      }
 
       return ServiceResponse.success('Login successfully', {
         token: authToken,

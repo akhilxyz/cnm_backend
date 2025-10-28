@@ -6,5 +6,6 @@ export const platformRouter: Router = express.Router();
 
 // platformRoutes
 platformRouter.get("/connected/:platform", authenticateToken, platformController.isConnected);
+platformRouter.get("/connected-platforms", authenticateToken, platformController.isPlatformsConnected);
 
 // userRouter.post("/login", validateRequest(LoginSchema), userController.login);

@@ -13,6 +13,7 @@ export interface User {
     image?: string;
     lang?: string;
     isActive?: boolean;
+    status? : string;
     loginWith: 'email' | 'phone' | 'gmail';
 }
 

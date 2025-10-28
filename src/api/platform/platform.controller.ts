@@ -9,6 +9,13 @@ class PlatformController {
     const serviceResponse = await platformService.isConnected(platform, userId);
     return handleServiceResponse(serviceResponse, res);
   };
+
+  public isPlatformsConnected: RequestHandler = async (req: Request, res: Response) => {
+    const {platform} = req?.params || ''
+    const userId = (req as any).user.id;
+    const serviceResponse = await platformService.isConnected(platform, userId);
+    return handleServiceResponse(serviceResponse, res);
+  };
 }
 
 export const platformController = new PlatformController();

@@ -80,6 +80,9 @@ export class UserRepository {
   }
 
   async createAsync(data: CreateUserInput): Promise<Omit<User, 'password'>> {
+    if(data.status)  {
+      data.status = data.status.toUpperCase()
+    }
     const user = await Model.User.create(data);
     const plainUser = user.get({ plain: true }) as User;
 
