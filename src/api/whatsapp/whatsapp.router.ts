@@ -17,6 +17,11 @@ whatsappRouter.put("/update-contacts/:id", authenticateToken, whatsAppAccountCon
 whatsappRouter.get("/contacts-list", authenticateToken, whatsAppAccountController.getContacts);
 whatsappRouter.delete("/contacts/:id", authenticateToken, whatsAppAccountController.deleteContact);
 
+
+// Export/Import routes
+whatsappRouter.get("/contacts/export", authenticateToken, whatsAppAccountController.bulkExportContacts);
+whatsappRouter.post("/contacts/import", authenticateToken, uploadFile.single('file'), whatsAppAccountController.bulkImportContacts);
+
 //chat
 // whatsappRouter.post("/send-message",authenticateToken, whatsAppAccountController.sendMessage);
 

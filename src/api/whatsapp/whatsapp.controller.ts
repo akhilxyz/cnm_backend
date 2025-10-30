@@ -114,9 +114,46 @@ export class WhatsAppAccountController {
     return handleServiceResponse(serviceResponse, res);
   };
 
-  public bulkImportContacts: RequestHandler = async (req, res) => {
-    const serviceResponse = await contactService.bulkImportContacts(req.user, req.body);
+
+ public bulkExportContacts: RequestHandler = async (req, res) => {
+  try {
+    const { id } = req.user as any;
+    const format = (req.query.format as string)?.toLowerCase() || 'csv';
+
+    const serviceResponse = await contactService.exportContacts(id, format);
+
+    if (serviceResponse.success && serviceResponse.responseObject) {
+      const filename = `contacts_${Date.now()}.${format}`;
+      
+      if (format === 'csv') {
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        // Ensure proper encoding for Excel compatibility
+        return res.status(200).send('\uFEFF' + serviceResponse.responseObject);
+      }
+
+      if (format === 'json') {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        return res.status(200).json(serviceResponse.responseObject);
+      }
+
+      // Unsupported format fallback
+      return res.status(400).json({ success: false, message: 'Unsupported export format' });
+    }
+
     return handleServiceResponse(serviceResponse, res);
+  } catch (error) {
+    console.error('Error in bulkExportContacts:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+
+  public bulkImportContacts: RequestHandler = async (req, res) => {
+    const { id } = req.user as any;
+      const serviceResponse = await contactService.importContacts(id, req.file);
+      return handleServiceResponse(serviceResponse, res);
   };
 
   // templete
@@ -369,8 +406,8 @@ export class WhatsAppAccountController {
     return handleServiceResponse(response, res);
   };
 
-   public getUnreadCountAll: RequestHandler = async (req, res) => {
-      const { id } = req.user as any;
+  public getUnreadCountAll: RequestHandler = async (req, res) => {
+    const { id } = req.user as any;
     const response = await chatService.getUnreadCountAll(Number(id));
     return handleServiceResponse(response, res);
   };

@@ -4,6 +4,7 @@ import { WhatsAppAccountRepository } from "@/api/whatsapp/repositories/whatsAppA
 import { ServiceResponse } from "@/common/models/serviceResponse";
 import { StatusCodes } from "http-status-codes";
 import { logger } from "@/server";
+import Papa from 'papaparse';
 
 export class ContactService {
   private repository: ContactRepository;
@@ -61,7 +62,7 @@ export class ContactService {
 
   async getContacts(userId: any, query: any): Promise<ServiceResponse<any>> {
     try {
-      const {  page = 1, limit = 20, search } = query;
+      const { page = 1, limit = 20, search } = query;
 
       const hasAccess = await this.whatsappAccountRepository.findByUserIdAsync(userId);
 
@@ -118,7 +119,7 @@ export class ContactService {
 
   async updateContact(userId: any, id: number, payload: any): Promise<ServiceResponse<any>> {
     try {
-       const hasAccess = await this.whatsappAccountRepository.findByUserIdAsync(userId);
+      const hasAccess = await this.whatsappAccountRepository.findByUserIdAsync(userId);
       if (!hasAccess) {
         return ServiceResponse.failure("Access denied", null, StatusCodes.FORBIDDEN);
       }
@@ -155,6 +156,167 @@ export class ContactService {
     } catch (ex) {
       logger.error(`Delete contact error: ${(ex as Error).message}`);
       return ServiceResponse.failure("Failed to delete contact", null, StatusCodes.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  async exportContacts(userId: number, format: string = 'csv'): Promise<ServiceResponse<any>> {
+    try {
+      const hasAccess = await this.whatsappAccountRepository.findByUserIdAsync(userId);
+
+      if (!hasAccess) {
+        return ServiceResponse.failure("Access denied", null, StatusCodes.FORBIDDEN);
+      }
+
+      // Get all contacts without pagination
+      const result = await this.repository.findAndCountAllAsync(
+        hasAccess.id,
+        1,
+        10000, // Large limit to get all contacts
+        undefined
+      );
+
+      if (result.total === 0) {
+        return ServiceResponse.failure("No contacts found to export", null, StatusCodes.NOT_FOUND);
+      }
+
+      // Format contacts for export
+      const exportData = result.data.map((contact: any) => ({
+        name: contact.dataValues.name,
+        phone_number: contact.dataValues.phoneNumber,
+        country_code: contact.dataValues.countryCode,
+        created_at: contact.dataValues.createdAt
+      }));
+
+      if (format === 'csv') {
+        const csv = Papa.unparse(exportData, {
+          header: true,
+          columns: ['name', 'phone_number', 'country_code', 'created_at']
+        });
+        
+        return ServiceResponse.success("Contacts exported successfully", csv);
+      } else {
+        // JSON format
+        return ServiceResponse.success("Contacts exported successfully", JSON.stringify(exportData, null, 2));
+      }
+    } catch (ex) {
+      logger.error(`Export contacts error: ${(ex as Error).message}`);
+      return ServiceResponse.failure("Failed to export contacts", null, StatusCodes.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  async importContacts(userId: number, file: any): Promise<ServiceResponse<any>> {
+    try {
+
+      if (!file) {
+        return ServiceResponse.failure("File Required", null, StatusCodes.BAD_REQUEST);
+      }
+
+      const hasAccess = await this.whatsappAccountRepository.findByUserIdAsync(userId);
+
+      if (!hasAccess) {
+        return ServiceResponse.failure("Access denied", null, StatusCodes.FORBIDDEN);
+      }
+
+      const fileContent = file.buffer.toString('utf-8');
+      let contacts: any[] = [];
+
+      // Parse CSV
+      if (file.mimetype === 'text/csv' || file.mimetype === 'application/vnd.ms-excel') {
+        const parsed = Papa.parse(fileContent, {
+          header: true,
+          skipEmptyLines: true,
+          transformHeader: (header: any) => header.trim().toLowerCase().replace(/ /g, '_')
+        });
+
+        if (parsed.errors.length > 0) {
+          return ServiceResponse.failure(
+            `CSV parsing error: ${parsed.errors[0].message}`,
+            null,
+            StatusCodes.BAD_REQUEST
+          );
+        }
+
+        contacts = parsed.data;
+      } else {
+        return ServiceResponse.failure("Unsupported file format", null, StatusCodes.BAD_REQUEST);
+      }
+
+      // Validate required fields
+      const requiredFields = ['name', 'phone_number', 'country_code'];
+      const invalidRows: number[] = [];
+      const validContacts: any[] = [];
+
+      contacts.forEach((contact: any, index: number) => {
+        const hasAllFields = requiredFields.every(field =>
+          contact[field] && contact[field].toString().trim() !== ''
+        );
+
+        if (!hasAllFields) {
+          invalidRows.push(index + 2); // +2 because index starts at 0 and header is row 1
+        } else {
+          validContacts.push(contact);
+        }
+      });
+
+      if (invalidRows.length > 0) {
+        return ServiceResponse.failure(
+          `Invalid rows found at line(s): ${invalidRows.join(', ')}. Missing required fields: name, phone_number, country_code`,
+          null,
+          StatusCodes.BAD_REQUEST
+        );
+      }
+
+      // Process contacts
+      const results = {
+        success: 0,
+        failed: 0,
+        duplicates: 0,
+        errors: [] as any[]
+      };
+
+      for (const contact of validContacts) {
+        try {
+          // Clean country code
+          const countryCode = contact.country_code.toString().replace(/^\+/, '').trim();
+          const phoneNumber = contact.phone_number.toString().trim();
+
+          // Check if contact already exists
+          const existing = await this.repository.findByPhoneNumberAsync(
+            hasAccess.id,
+            phoneNumber
+          );
+
+          if (existing) {
+            results.duplicates++;
+            continue;
+          }
+
+          // Create contact
+          await this.repository.createAsync({
+            whatsappAccountId: hasAccess.id,
+            phoneNumber: countryCode + phoneNumber,
+            name: contact.name.toString().trim(),
+            countryCode: '+' + countryCode
+          });
+
+          results.success++;
+        } catch (error) {
+          results.failed++;
+          results.errors.push({
+            contact: contact.name,
+            error: (error as Error).message
+          });
+        }
+      }
+
+      return ServiceResponse.success(
+        `Import completed: ${results.success} added, ${results.duplicates} duplicates skipped, ${results.failed} failed`,
+        results,
+        StatusCodes.OK
+      );
+    } catch (ex) {
+      logger.error(`Import contacts error: ${(ex as Error).message}`);
+      return ServiceResponse.failure("Failed to import contacts", null, StatusCodes.INTERNAL_SERVER_ERROR);
     }
   }
 
