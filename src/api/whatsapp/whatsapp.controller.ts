@@ -152,7 +152,7 @@ export class WhatsAppAccountController {
 
   public bulkImportContacts: RequestHandler = async (req, res) => {
     const { id } = req.user as any;
-      const serviceResponse = await contactService.importContacts(id, req.file);
+      const serviceResponse = await contactService.importContacts(id, req.file, req?.body?.tag);
       return handleServiceResponse(serviceResponse, res);
   };
 

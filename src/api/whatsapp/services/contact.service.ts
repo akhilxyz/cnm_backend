@@ -41,6 +41,7 @@ export class ContactService {
         hasAccess.id,
         payload.phone_number
       );
+
       if (existing) {
         return ServiceResponse.failure("Contact already exists", null, StatusCodes.BAD_REQUEST);
       }
@@ -50,7 +51,8 @@ export class ContactService {
         whatsappAccountId: hasAccess.id,
         phoneNumber: countryCode + payload.phone_number,
         name: payload.name,
-        countryCode: payload.country_code
+        countryCode: payload.country_code,
+        tag: payload?.tag ?? ''
       });
 
       return ServiceResponse.success("Contact created successfully", contact, StatusCodes.CREATED);
@@ -132,6 +134,7 @@ export class ContactService {
       const updated = await this.repository.updateAsync(id, {
         name: payload.name ?? contact.name,
         status: payload.status ?? contact.status,
+        tag: payload.tag ?? contact.tag,
       });
 
       return ServiceResponse.success("Contact updated successfully", updated);
@@ -192,7 +195,7 @@ export class ContactService {
           header: true,
           columns: ['name', 'phone_number', 'country_code', 'created_at']
         });
-        
+
         return ServiceResponse.success("Contacts exported successfully", csv);
       } else {
         // JSON format
@@ -204,7 +207,7 @@ export class ContactService {
     }
   }
 
-  async importContacts(userId: number, file: any): Promise<ServiceResponse<any>> {
+  async importContacts(userId: number, file: any, tag: string = ''): Promise<ServiceResponse<any>> {
     try {
 
       if (!file) {
@@ -254,6 +257,10 @@ export class ContactService {
         if (!hasAllFields) {
           invalidRows.push(index + 2); // +2 because index starts at 0 and header is row 1
         } else {
+          if (tag) {
+            contact.tag = tag
+          }
+
           validContacts.push(contact);
         }
       });
@@ -296,7 +303,8 @@ export class ContactService {
             whatsappAccountId: hasAccess.id,
             phoneNumber: countryCode + phoneNumber,
             name: contact.name.toString().trim(),
-            countryCode: '+' + countryCode
+            countryCode: '+' + countryCode,
+            tag: contact?.tag ?? ""
           });
 
           results.success++;

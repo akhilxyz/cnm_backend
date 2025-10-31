@@ -20,6 +20,8 @@ export const createContactSchema = {
       .messages({
         "string.pattern.base": "Phone number must be in E.164 format (e.g., +14155552671).",
       }),
+    tag: Joi.string()
+      .optional(),
     name: Joi.string()
       .min(2)
       .max(100)

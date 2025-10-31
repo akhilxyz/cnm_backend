@@ -8,6 +8,7 @@ export interface IContactAttributes {
   phoneNumber: string;
   countryCode?: string;
   status?: 'ACTIVE' | 'BLOCKED' | 'DELETED';
+  tag? : string;
   lastMessageAt?: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
@@ -47,6 +48,10 @@ Contact.init(
     name: {
       type: DataTypes.STRING(100),
       allowNull: false,
+    },
+    tag: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
     },
     phoneNumber: {
       type: DataTypes.STRING(20),
