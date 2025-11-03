@@ -1,5 +1,5 @@
 import Model from "@/db/models";
-import { Op } from "sequelize";
+import { col, fn, Op } from "sequelize";
 
 export class ContactRepository {
   async findByPhoneNumberAsync(whatsappAccountId: number, phoneNumber: string) {
@@ -24,6 +24,7 @@ export class ContactRepository {
     page = 1,
     limit = 20,
     search?: string,
+    tag?:string
   ) {
     const offset = (page - 1) * limit;
     const where: any = { whatsappAccountId };
@@ -33,6 +34,9 @@ export class ContactRepository {
         { name: { [Op.like]: `%${search}%` } },
         { phoneNumber: { [Op.like]: `%${search}%` } },
       ];
+    }
+    if(tag) {
+      where.tag = tag
     }
     const { rows, count } = await Model.Contact.findAndCountAll({
       where,
@@ -50,6 +54,25 @@ export class ContactRepository {
   async findByIdAsync(id: number) {
     const contact = await Model.Contact.findByPk(id);
     return contact ? contact.get({ plain: true }) : null;
+  }
+
+  async findUniqueTagsAsync(whatsappAccountId : number) {
+    const contacts: any = await Model.Contact.findAll({
+      attributes: [
+        'tag',
+        [fn('COUNT', col('tag')), 'count']
+      ],
+      where: {
+        whatsappAccountId : whatsappAccountId,
+        [Op.and]: [
+          { tag: { [Op.not]: null as any } }, // ✅ use [Op.not] instead of [Op.ne]: null
+          { tag: { [Op.ne]: '' } }     // ✅ exclude empty strings
+        ]
+      },
+      group: ['tag'],   // group by tags
+      raw: true
+    });
+    return contacts.map((c: any) => c.tag);
   }
 
 

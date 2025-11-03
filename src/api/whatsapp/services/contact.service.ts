@@ -64,7 +64,7 @@ export class ContactService {
 
   async getContacts(userId: any, query: any): Promise<ServiceResponse<any>> {
     try {
-      const { page = 1, limit = 20, search } = query;
+      const { page = 1, limit = 20, search, tag } = query;
 
       const hasAccess = await this.whatsappAccountRepository.findByUserIdAsync(userId);
 
@@ -77,6 +77,7 @@ export class ContactService {
         Number(page),
         Number(limit),
         search,
+        tag
       );
 
       const pagination = {
@@ -159,6 +160,21 @@ export class ContactService {
     } catch (ex) {
       logger.error(`Delete contact error: ${(ex as Error).message}`);
       return ServiceResponse.failure("Failed to delete contact", null, StatusCodes.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+    async contactTags(userId: any): Promise<ServiceResponse<any>> {
+    try {
+      const hasAccess = await this.whatsappAccountRepository.findByUserIdAsync(userId);
+      if (!hasAccess) {
+        return ServiceResponse.failure("Access denied", null, StatusCodes.FORBIDDEN);
+      }
+      const tags = await this.repository.findUniqueTagsAsync(hasAccess.id);
+
+      return ServiceResponse.success("tags fetched successfully", {data : tags});
+    } catch (ex) {
+      logger.error(`failed to get contact tags error: ${(ex as Error).message}`);
+      return ServiceResponse.failure("Failed to get contact tags", null, StatusCodes.INTERNAL_SERVER_ERROR);
     }
   }
 

@@ -114,6 +114,12 @@ export class WhatsAppAccountController {
     return handleServiceResponse(serviceResponse, res);
   };
 
+  public contactTags: RequestHandler = async (req, res) => {
+    const { id } = req.user as any
+    const serviceResponse = await contactService.contactTags(id)
+    return handleServiceResponse(serviceResponse, res);
+  };
+
 
  public bulkExportContacts: RequestHandler = async (req, res) => {
   try {

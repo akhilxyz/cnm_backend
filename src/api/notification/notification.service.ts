@@ -28,10 +28,6 @@ export class NotificationService {
 
       const notifications = await this.notificationRepository.findRecentAsync(WAAccount.id, limit);
 
-      if (!notifications || notifications.length === 0) {
-        return ServiceResponse.failure('No notifications found', null, StatusCodes.NOT_FOUND);
-      }
-
       return ServiceResponse.success('Notifications fetched successfully', notifications);
     } catch (ex) {
       const errorMessage = `Error fetching notifications: ${(ex as Error).message}`;

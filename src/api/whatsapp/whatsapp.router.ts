@@ -16,7 +16,7 @@ whatsappRouter.post("/add-contacts", authenticateToken, validateRequest(createCo
 whatsappRouter.put("/update-contacts/:id", authenticateToken, whatsAppAccountController.updateContact);
 whatsappRouter.get("/contacts-list", authenticateToken, whatsAppAccountController.getContacts);
 whatsappRouter.delete("/contacts/:id", authenticateToken, whatsAppAccountController.deleteContact);
-
+whatsappRouter.get("/contacts/tags", authenticateToken, whatsAppAccountController.contactTags);
 
 // Export/Import routes
 whatsappRouter.get("/contacts/export", authenticateToken, whatsAppAccountController.bulkExportContacts);
